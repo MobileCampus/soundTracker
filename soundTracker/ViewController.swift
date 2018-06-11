@@ -88,6 +88,16 @@ class ViewController: UIViewController {
     var recorder : Recorder!
     var path : String?
     
+    // for detecting whether start to work
+    var operation_queue = OperationQueue()
+    // Operation Queue
+    var operation = BlockOperation{
+        while (true) {
+            print("execution op queue")
+        }
+    }
+
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -225,16 +235,22 @@ class ViewController: UIViewController {
     }
     
     // start to detect whether we should launch tasks (mute or play etc.)
-    func shouldWeWorkNow() {
+    func shouldWeWorkNow() -> Bool {
         // sensor data determination
         if (fabs(self.cur_acce) < 1 && checkRotation()) {
             recorder = Recorder()
             recorder.sender.locateDelegate = self
             recorder.record(id: 3)
+            return true
         } else {
             print("Not in static and horizontal mode!")
+            return false
         }
     }
+    
+    
+    
+    
     
 }
 
@@ -364,9 +380,17 @@ extension ViewController: SwitchDelegate {
     func switchDidChangeState(control: Switch, state: SwitchState) {
         print("Switch changed state to: ", .on == state ? "on" : "off")
         if (.on == state) {
-            shouldWeWorkNow()
+            operation_queue.addOperation {
+                while (true) {
+                    sleep(1)
+                    if (self.shouldWeWorkNow()) {
+                        break
+                    }
+                }
+            }
+//            shouldWeWorkNow()
         } else {
-            
+            operation_queue.cancelAllOperations()
         }
     }
 }
@@ -420,7 +444,7 @@ extension ViewController: LocateProtocol{
                 // play music
                 print("Play MUSIC!")
             } else {
-                print("NOTHING!")
+                print("NOT in the zone!")
             }
         } else {
             
